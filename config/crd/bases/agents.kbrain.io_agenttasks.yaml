@@ -1,0 +1,291 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.17.0
+  name: agenttasks.agents.kbrain.io
+spec:
+  group: agents.kbrain.io
+  names:
+    kind: AgentTask
+    listKind: AgentTaskList
+    plural: agenttasks
+    singular: agenttask
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.phase
+      name: Phase
+      type: string
+    - jsonPath: .spec.agentType
+      name: Agent
+      type: string
+    - jsonPath: .spec.modelName
+      name: Model
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: AgentTask is the Schema for the agenttasks API.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: AgentTaskSpec defines the desired state of AgentTask.
+            properties:
+              agentType:
+                description: AgentType selects which coding agent to run.
+                enum:
+                - claude-code
+                - aider
+                - codex
+                type: string
+              apiKeySecretRef:
+                description: APIKeySecretRef references a Secret containing the model
+                  provider API key.
+                properties:
+                  key:
+                    description: Key within the Secret data. Defaults to the first
+                      key if empty.
+                    type: string
+                  name:
+                    description: Name of the Secret.
+                    type: string
+                required:
+                - name
+                type: object
+              approvalMode:
+                default: manual
+                description: ApprovalMode controls whether the MR is auto-merged or
+                  requires manual approval.
+                enum:
+                - auto-merge
+                - manual
+                type: string
+              description:
+                description: Description is the task/feature description or problem
+                  statement for the agent.
+                type: string
+              git:
+                description: Git holds repository and branch configuration.
+                properties:
+                  baseBranch:
+                    description: BaseBranch is the source branch to base work on.
+                    type: string
+                  platform:
+                    default: github
+                    description: Platform is the git hosting platform for MR/PR creation.
+                    enum:
+                    - github
+                    - gitlab
+                    - bitbucket
+                    type: string
+                  repoURL:
+                    description: RepoURL is the git repository URL (HTTPS or SSH).
+                    type: string
+                  targetBranch:
+                    description: TargetBranch is the branch the MR/PR targets. Defaults
+                      to BaseBranch.
+                    type: string
+                  workBranch:
+                    description: WorkBranch is the branch name the agent will create.
+                      Auto-generated if empty.
+                    type: string
+                required:
+                - baseBranch
+                - repoURL
+                type: object
+              gitCredentialsSecretRef:
+                description: GitCredentialsSecretRef references a Secret containing
+                  git credentials (token, username).
+                properties:
+                  key:
+                    description: Key within the Secret data. Defaults to the first
+                      key if empty.
+                    type: string
+                  name:
+                    description: Name of the Secret.
+                    type: string
+                required:
+                - name
+                type: object
+              modelName:
+                description: ModelName is the model to use (e.g. "deepseek-coder:33b",
+                  "claude-sonnet-4-20250514").
+                type: string
+              modelProvider:
+                description: ModelProvider selects local open-source (ollama) or cloud
+                  API-based models.
+                enum:
+                - ollama
+                - cloud
+                type: string
+              ollamaConfig:
+                description: OllamaConfig holds ollama-specific settings (sidecar
+                  image, GPU, etc.).
+                properties:
+                  image:
+                    default: ollama/ollama:latest
+                    description: Image for the ollama sidecar container.
+                    type: string
+                  pullTimeout:
+                    description: PullTimeout is how long to wait for model download
+                      (e.g. "10m").
+                    type: string
+                  useGPU:
+                    description: UseGPU enables GPU resource requests for ollama.
+                    type: boolean
+                type: object
+              poolRef:
+                description: PoolRef is an optional reference to an AgentPool this
+                  task belongs to.
+                type: string
+              resources:
+                description: Resources defines resource requirements for the agent
+                  pod.
+                properties:
+                  cpuRequest:
+                    description: CPURequest for the agent container (e.g. "500m").
+                    type: string
+                  gpuLimit:
+                    description: GPULimit for the ollama sidecar (e.g. "1").
+                    type: string
+                  memoryRequest:
+                    description: MemoryRequest for the agent container (e.g. "512Mi").
+                    type: string
+                type: object
+              timeout:
+                default: 30m
+                description: Timeout for the agent task (e.g. "30m", "1h"). Defaults
+                  to "30m".
+                type: string
+            required:
+            - agentType
+            - description
+            - git
+            - modelName
+            - modelProvider
+            type: object
+          status:
+            description: AgentTaskStatus defines the observed state of AgentTask.
+            properties:
+              branchName:
+                description: BranchName is the git branch that was created.
+                type: string
+              conditions:
+                description: Conditions provide detailed status information.
+                items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+              endTime:
+                description: EndTime is when the task completed.
+                format: date-time
+                type: string
+              exitCode:
+                description: ExitCode of the agent process.
+                format: int32
+                type: integer
+              mergeRequestURL:
+                description: MergeRequestURL is the URL of the created MR/PR.
+                type: string
+              message:
+                description: Message is a human-readable status message.
+                type: string
+              outputSummary:
+                description: OutputSummary is a summary of the agent's output.
+                type: string
+              phase:
+                description: Phase is the current lifecycle phase.
+                enum:
+                - Pending
+                - Initializing
+                - Running
+                - PushingBranch
+                - CreatingMR
+                - Succeeded
+                - Failed
+                type: string
+              podName:
+                description: PodName is the name of the Pod running the agent.
+                type: string
+              startTime:
+                description: StartTime is when the task started running.
+                format: date-time
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

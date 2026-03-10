@@ -1,0 +1,61 @@
+apiVersion: agents.kbrain.io/v1alpha1
+kind: AgentTask
+metadata:
+  name: fix-login-bug
+  namespace: kbrain-system
+  labels:
+    app.kubernetes.io/name: kbrain
+    app.kubernetes.io/managed-by: kustomize
+    kbrain.io/pool: backend-pool
+spec:
+  description: |
+    Fix the login endpoint that returns 500 when the email contains
+    a plus sign. The bug is in pkg/auth/handler.go. Add a test case.
+  modelProvider: cloud
+  modelName: claude-sonnet-4-20250514
+  agentType: claude-code
+  git:
+    repoURL: https://github.com/acme/backend.git
+    baseBranch: main
+    targetBranch: main
+    workBranch: fix/login-plus-sign-email
+    platform: github
+  approvalMode: manual
+  apiKeySecretRef:
+    name: anthropic-api-key
+    key: api-key
+  gitCredentialsSecretRef:
+    name: git-credentials
+    key: token
+  timeout: "45m"
+---
+# Example: Using ollama with a local open-source model
+apiVersion: agents.kbrain.io/v1alpha1
+kind: AgentTask
+metadata:
+  name: add-pagination
+  namespace: kbrain-system
+  labels:
+    app.kubernetes.io/name: kbrain
+    app.kubernetes.io/managed-by: kustomize
+    kbrain.io/pool: backend-pool
+spec:
+  description: |
+    Add cursor-based pagination to the /api/v1/users endpoint.
+    Follow the existing pagination pattern from /api/v1/orders.
+  modelProvider: ollama
+  modelName: deepseek-coder-v2:latest
+  agentType: aider
+  git:
+    repoURL: https://github.com/acme/backend.git
+    baseBranch: main
+    workBranch: feat/users-pagination
+    platform: github
+  approvalMode: manual
+  gitCredentialsSecretRef:
+    name: git-credentials
+    key: token
+  ollamaConfig:
+    image: ollama/ollama:latest
+    useGPU: true
+  timeout: "1h"

@@ -1,0 +1,28 @@
+apiVersion: agents.kbrain.io/v1alpha1
+kind: AgentPool
+metadata:
+  name: backend-pool
+  namespace: kbrain-system
+  labels:
+    app.kubernetes.io/name: kbrain
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  maxConcurrency: 5
+  defaultModelProvider: cloud
+  defaultModelName: claude-sonnet-4-20250514
+  defaultAgentType: claude-code
+  git:
+    repoURL: https://github.com/acme/backend.git
+    baseBranch: main
+    targetBranch: main
+    platform: github
+  defaultAPIKeySecretRef:
+    name: anthropic-api-key
+    key: api-key
+  defaultGitCredentialsSecretRef:
+    name: git-credentials
+    key: token
+  selector:
+    matchLabels:
+      kbrain.io/pool: backend-pool
+  queueStrategy: fifo
